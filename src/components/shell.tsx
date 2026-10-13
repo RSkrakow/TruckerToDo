@@ -1,0 +1,17 @@
+import Link from 'next/link';
+import {LayoutDashboard,NotebookPen,Settings,CheckCheck,Plus,LogOut,Folder} from 'lucide-react';
+import {signOut} from '@/app/actions';
+import type {Profile,Area} from '@/lib/types';
+import {Button} from '@/components/ui/button';
+export function Shell({children,profile,areas=[]}:{children:React.ReactNode;profile:Profile;areas?:Area[]}){return <div className="min-h-screen">
+ <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-border bg-card p-6 lg:flex lg:flex-col">
+ <Link href="/" className="flex items-center gap-3 text-lg font-bold"><span className="rounded-xl bg-primary p-2 text-white"><CheckCheck size={22}/></span>Tracker To Do</Link>
+ <p className="mb-8 mt-2 text-xs text-muted-foreground">Od notatki do realizacji.</p>
+ <nav className="grid gap-2 text-sm"><Link className="flex items-center gap-3 rounded-lg bg-accent p-3 font-semibold text-primary" href="/"><LayoutDashboard size={18}/>Mój tracker</Link><Link className="flex items-center gap-3 rounded-lg p-3 hover:bg-muted" href="/notes"><NotebookPen size={18}/>Historia notatek</Link>{profile.role==='admin'&&<Link className="flex items-center gap-3 rounded-lg p-3 hover:bg-muted" href="/admin"><Settings size={18}/>Zespół i obszary</Link>}</nav>
+ <p className="mb-3 mt-8 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Obszary pracy</p><div className="grid gap-1">{areas.map(a=><Link key={a.id} href={`/?area=${a.id}`} className="flex items-center gap-3 rounded-lg p-2 text-sm hover:bg-muted"><span className="h-2 w-2 rounded-full" style={{background:a.color_code}}/>{a.name}</Link>)}</div>
+ <div className="mt-auto border-t border-border pt-5"><p className="text-sm font-semibold">{profile.full_name||profile.email}</p><p className="mt-1 text-xs text-muted-foreground">{profile.role==='admin'?'Administrator':profile.role==='manager'?'Manager':'Członek zespołu'}</p><form action={signOut}><button className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><LogOut size={14}/>Wyloguj</button></form></div>
+ </aside>
+ <div className="lg:ml-64"><header className="flex items-center justify-between border-b border-border bg-card px-5 py-4 lg:px-10"><Link href="/" className="flex items-center gap-2 font-bold lg:hidden"><CheckCheck className="text-primary"/>Tracker</Link><span className="hidden text-sm text-muted-foreground lg:block">Przestrzeń zespołu / <span className="text-foreground">Zadania i ustalenia</span></span><div className="flex items-center gap-3"><Button asChild size="sm" variant="outline"><Link href="/items/new"><Plus size={15}/>Wpis ręczny</Link></Button><span title={profile.email} className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-xs font-bold text-primary">{(profile.full_name||profile.email).slice(0,2).toUpperCase()}</span></div></header>
+ <main className="mx-auto max-w-7xl px-5 py-7 pb-24 lg:px-10 lg:py-10">{children}</main>
+ <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-border bg-card p-3 text-xs lg:hidden"><Link href="/" className="grid justify-items-center gap-1"><LayoutDashboard size={20}/>Tracker</Link><Link href="/notes/new" className="grid justify-items-center gap-1"><Plus size={20}/>Notatka</Link><Link href="/notes" className="grid justify-items-center gap-1"><Folder size={20}/>Historia</Link>{profile.role==='admin'&&<Link href="/admin" className="grid justify-items-center gap-1"><Settings size={20}/>Zespół</Link>}</nav></div>
+ </div>;}

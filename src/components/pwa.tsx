@@ -1,0 +1,3 @@
+'use client';
+import {useEffect,useState} from 'react';
+export function Pwa(){const[offline,setOffline]=useState(false);useEffect(()=>{if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});const update=()=>setOffline(!navigator.onLine);update();window.addEventListener('online',update);window.addEventListener('offline',update);return()=>{window.removeEventListener('online',update);window.removeEventListener('offline',update);};},[]);return offline?<div role="status" className="fixed bottom-4 left-4 right-4 z-50 rounded-lg bg-foreground p-3 text-center text-sm text-white">Brak połączenia. Zmiany wymagają dostępu do internetu.</div>:null;}
