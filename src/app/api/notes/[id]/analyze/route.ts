@@ -54,49 +54,68 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    }
    geminiParts.push({text:`KONTEKST BIZNESOWY:\n${contextPayload}`});
 
-   const model=process.env.GEMINI_MODEL||'gemini-1.5-flash';
-   const geminiRes=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    signal:AbortSignal.timeout(80000),
-    body:JSON.stringify({
-     systemInstruction:{parts:[{text:instructions}]},
-     contents:[{role:'user',parts:geminiParts}],
-     generationConfig:{
-      responseMimeType:'application/json',
-      responseSchema:{
-       type:'OBJECT',
-       properties:{
-        items:{
-         type:'ARRAY',
-         items:{
-          type:'OBJECT',
-          properties:{
-           title:{type:'STRING'},
-           description:{type:'STRING'},
-           type:{type:'STRING',enum:['task','info']},
-           area_id:{type:'STRING'},
-           assigned_to:{type:'STRING',nullable:true},
-           due_date:{type:'STRING',nullable:true},
-           duplicate_id:{type:'STRING',nullable:true},
-           duplicate_reason:{type:'STRING',nullable:true}
-          },
-          required:['title','description','type','area_id','assigned_to','due_date','duplicate_id','duplicate_reason']
-         }
-        }
-       },
-       required:['items']
-      }
-     }
-    })
-   });
+   const candidateModels=[
+    process.env.GEMINI_MODEL,
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-flash-latest'
+   ].filter((m,i,arr):m is string=>Boolean(m)&&arr.indexOf(m)===i);
 
-   if(!geminiRes.ok){
-    const errBody=await geminiRes.text();
-    let msg='Błąd usługi Gemini';
-    try{msg=JSON.parse(errBody).error?.message||msg;}catch{}
-    throw new Error(`Gemini: ${msg}`);
+   let geminiRes:Response|null=null;
+   let lastErrMsg='';
+
+   for(const model of candidateModels){
+    try{
+     const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      signal:AbortSignal.timeout(60000),
+      body:JSON.stringify({
+       systemInstruction:{parts:[{text:instructions}]},
+       contents:[{role:'user',parts:geminiParts}],
+       generationConfig:{
+        responseMimeType:'application/json',
+        responseSchema:{
+         type:'OBJECT',
+         properties:{
+          items:{
+           type:'ARRAY',
+           items:{
+            type:'OBJECT',
+            properties:{
+             title:{type:'STRING'},
+             description:{type:'STRING'},
+             type:{type:'STRING',enum:['task','info']},
+             area_id:{type:'STRING'},
+             assigned_to:{type:'STRING',nullable:true},
+             due_date:{type:'STRING',nullable:true},
+             duplicate_id:{type:'STRING',nullable:true},
+             duplicate_reason:{type:'STRING',nullable:true}
+            },
+            required:['title','description','type','area_id']
+           }
+          }
+         },
+         required:['items']
+        }
+       }
+      })
+     });
+     if(res.ok){
+      geminiRes=res;
+      break;
+     }
+     const errBody=await res.text();
+     try{lastErrMsg=JSON.parse(errBody).error?.message||errBody;}catch{lastErrMsg=errBody;}
+    }catch(err){
+     lastErrMsg=err instanceof Error?err.message:String(err);
+    }
    }
+
+   if(!geminiRes){
+    throw new Error(`Gemini: ${lastErrMsg}`);
+   }
+
    const geminiData=await geminiRes.json();
    const outputText=geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
    if(!outputText)throw new Error('Model Gemini nie zwrócił żadnej odpowiedzi.');
@@ -177,6 +196,9 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   return Response.json({ok:true});
  }catch(e){
   if(claimed)await client.from('notes_history').update({processing_state:'failed'}).eq('id',id);
-  return Response.json({error:e instanceof Error && !/api|key|token/i.test(e.message)?e.message:'Analiza nie powiodła się. Spróbuj ponownie.'},{status:422});
+  let errorMsg=e instanceof Error?e.message:'Analiza nie powiodła się. Spróbuj ponownie.';
+  if(process.env.GEMINI_API_KEY) errorMsg=errorMsg.replaceAll(process.env.GEMINI_API_KEY,'***');
+  if(process.env.OPENAI_API_KEY) errorMsg=errorMsg.replaceAll(process.env.OPENAI_API_KEY,'***');
+  return Response.json({error:errorMsg},{status:422});
  }
 }
