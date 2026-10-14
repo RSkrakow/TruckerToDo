@@ -37,13 +37,15 @@ Następnie otwórz **Zespół i obszary**. Dodaj uprawnienia obszarów i role is
 | `NEXT_PUBLIC_SUPABASE_URL` | Publiczna | URL projektu Supabase |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publiczna | Klucz publishable; bezpieczeństwo egzekwuje RLS |
 | `NEXT_PUBLIC_APP_URL` | Publiczna | Pełny URL aplikacji bez końcowego `/`, np. https://tracker.firma.pl |
-| `OPENAI_API_KEY` | Tylko serwer | Klucz API OpenAI z włączonym rozliczaniem |
-| `OPENAI_MODEL` | Tylko serwer | Model obsługujący obrazy, pliki PDF, Responses API i Structured Outputs; domyślnie `gpt-4.1` |
+| `GEMINI_API_KEY` | Tylko serwer | **Bezpłatny** klucz z Google AI Studio (zalecany) |
+| `GEMINI_MODEL` | Tylko serwer | Model Gemini obsługujący multimodalność i JSON; domyślnie `gemini-1.5-flash` |
+| `OPENAI_API_KEY` | Tylko serwer | Alternatywnie klucz API OpenAI z włączonym rozliczaniem |
+| `OPENAI_MODEL` | Tylko serwer | Domyślnie `gpt-4.1` (jeśli używany zamiast Gemini) |
 | `TEAMS_WEBHOOK_URL` | Tylko serwer | HTTPS webhook Teams Workflows; opcjonalny |
 | `SUPABASE_SERVICE_ROLE_KEY` | Tylko serwer | Dispatcher kolejki Teams; nie używa go analiza AI ani zwykły CRUD |
 | `CRON_SECRET` | Tylko serwer | Losowy sekret minimum 32 znaki dla `/api/notifications` i Vercel Cron |
 
-Bez klucza OpenAI działają ręczne wpisy i przechowywanie notatek; analiza zgłasza brak konfiguracji. Bez webhooka zadania zapisują się normalnie, powiadomienia oczekują w kolejce. Ustaw klucze bezpośrednio w Vercel Environment Variables. Nie dodawaj prefiksu `NEXT_PUBLIC_` do sekretów.
+Bez klucza AI (Gemini lub OpenAI) działają ręczne wpisy i przechowywanie notatek; analiza zgłasza brak konfiguracji. Bez webhooka zadania zapisują się normalnie, powiadomienia oczekują w kolejce. Ustaw klucze bezpośrednio w Vercel Environment Variables. Nie dodawaj prefiksu `NEXT_PUBLIC_` do sekretów.
 
 ## 4. Logowanie Microsoft / Entra ID
 
@@ -62,7 +64,7 @@ Dokumentacja: https://supabase.com/docs/guides/auth/social-login/auth-azure oraz
 
 1. **Dodaj nową notatkę** → wybierz dokument, aparat telefonu lub tekst. Mobile capture korzysta z systemowego aparatu; urządzenie może wyświetlić wybór źródła.
 2. Plik do 15 MB trafia bezpośrednio do prywatnego Storage. Nazwa i identyfikator spotkania trafiają do `notes_history`.
-3. Kliknij **Uruchom analizę AI**. Nie ma automatycznego przetwarzania w tle. Plik i maksymalnie 500 ostatnich widocznych wpisów zostaną wysłane do OpenAI. Ustal w firmie zasady przesyłania treści notatek do tego dostawcy.
+3. Kliknij **Uruchom analizę AI**. Nie ma automatycznego przetwarzania w tle. Plik i maksymalnie 500 ostatnich widocznych wpisów zostaną wysłane do wybranego modelu AI (Google Gemini lub OpenAI). Ustal w firmie zasady przesyłania treści notatek do tego dostawcy.
 4. Sprawdź treść, opis, obszar, osobę i termin. Nieznana osoba pozostaje nieprzypisana. Propozycje mają `pending_approval` i widzi je właściciel/admin.
 5. Wybierz **Dodaj nowy wpis**, **Powiąż z istniejącym** lub **Pomiń**. Dla kilku osób na tym samym spotkaniu użyj wspólnego identyfikatora; powiązanie dodaje kolejne źródło do jednego wpisu.
 6. Kliknij **Zatwierdź i Dodaj do Trackera**. Jedna transakcja zapisuje decyzje; akceptacja ponowiona po sukcesie nie dodaje wpisów drugi raz.
