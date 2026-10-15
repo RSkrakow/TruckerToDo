@@ -177,7 +177,7 @@ begin
   select * into draft from public.items where id=(d->>'id')::uuid and note_id=p_note and approved_at is null and status='pending_approval' for update;
   if not found then raise exception 'Invalid draft'; end if;
   if d->>'mode'='add' then
-   update public.items set title=d->>'title',description=d->>'description',area_id=(d->>'area_id')::uuid,assigned_to=nullif(d->>'assigned_to','')::uuid,due_date=nullif(d->>'due_date','')::date,status='todo' where id=draft.id;
+   update public.items set title=d->>'title',description=d->>'description',type=coalesce(nullif(d->>'type',''),draft.type),area_id=(d->>'area_id')::uuid,assigned_to=nullif(d->>'assigned_to','')::uuid,due_date=nullif(d->>'due_date','')::date,status='todo' where id=draft.id;
    insert into public.item_sources(item_id,note_id) values(draft.id,p_note) on conflict do nothing;
   elsif d->>'mode'='link' then
    select * into target from public.items where id=(d->>'duplicate_id')::uuid and approved_at is not null and type=draft.type;
