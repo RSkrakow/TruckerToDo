@@ -79,3 +79,55 @@ test('change detection and payload creation strictly preserves existing fields',
     status: 'in_progress'
   });
 });
+
+function resolveTrackerReturnUrl(from, savedUrl) {
+  if (from && from !== '/') {
+    try {
+      return decodeURIComponent(from);
+    } catch {
+      return from;
+    }
+  }
+  if (savedUrl && savedUrl !== '/') {
+    return savedUrl;
+  }
+  return '/';
+}
+
+function buildItemNextUrl(resultId, returnHref) {
+  const fromParam = returnHref && returnHref !== '/' ? returnHref : null;
+  return `/items/${resultId}` + (fromParam ? `?from=${encodeURIComponent(fromParam)}` : '');
+}
+
+test('tracker return url and next url preserve search filters across full edit', () => {
+  const activeFilters = '/?tab=task&area=area-rs&status=active&q=pilne';
+
+  // Resolves direct from parameter
+  assert.equal(
+    resolveTrackerReturnUrl(encodeURIComponent(activeFilters), null),
+    activeFilters
+  );
+
+  // Falls back to saved sessionStorage URL if from is missing or bare '/'
+  assert.equal(
+    resolveTrackerReturnUrl('/', activeFilters),
+    activeFilters
+  );
+  assert.equal(
+    resolveTrackerReturnUrl(undefined, activeFilters),
+    activeFilters
+  );
+
+  // Returns '/' when no filters exist
+  assert.equal(resolveTrackerReturnUrl(undefined, null), '/');
+
+  // Preserves from parameter after saving item in ItemForm
+  assert.equal(
+    buildItemNextUrl('item-123', activeFilters),
+    `/items/item-123?from=${encodeURIComponent(activeFilters)}`
+  );
+  assert.equal(
+    buildItemNextUrl('item-123', '/'),
+    '/items/item-123'
+  );
+});

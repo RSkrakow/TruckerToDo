@@ -34,6 +34,30 @@ export function TrackerList({items,areas,people,profile,memberships,today}: Trac
     setList(items);
   }, [items]);
 
+  // Save current filter URL and handle returning from full edit
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const shouldRestore = sessionStorage.getItem('tracker_from_full_edit');
+        const savedSearch = sessionStorage.getItem('tracker_last_search');
+
+        if (shouldRestore === 'true') {
+          sessionStorage.removeItem('tracker_from_full_edit');
+          if (savedSearch && !window.location.search) {
+            router.replace('/' + savedSearch);
+            return;
+          }
+        }
+
+        // Always save current full URL and search parameters when on tracker
+        sessionStorage.setItem('tracker_last_url', window.location.pathname + window.location.search);
+        if (window.location.search) {
+          sessionStorage.setItem('tracker_last_search', window.location.search);
+        }
+      }
+    } catch {}
+  }, [router]);
+
   // Restore scroll position after returning from full edit or navigation
   useEffect(() => {
     try {
@@ -193,6 +217,11 @@ export function TrackerList({items,areas,people,profile,memberships,today}: Trac
 
     try {
       sessionStorage.setItem('tracker_scroll_pos', String(window.scrollY));
+      sessionStorage.setItem('tracker_last_url', window.location.pathname + window.location.search);
+      if (window.location.search) {
+        sessionStorage.setItem('tracker_last_search', window.location.search);
+      }
+      sessionStorage.setItem('tracker_from_full_edit', 'true');
     } catch {}
 
     const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
@@ -316,7 +345,7 @@ export function TrackerList({items,areas,people,profile,memberships,today}: Trac
                   }
                 }}
                 className={cn(
-                  "absolute left-0 sm:left-4 z-50 w-[480px] max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-card p-4 shadow-xl transition-all",
+                  "absolute left-0 sm:left-2 z-50 w-full sm:w-[760px] lg:w-[820px] max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xl transition-all",
                   activePopup.placement === 'top'
                     ? "bottom-[calc(100%+6px)] after:absolute after:-bottom-2 after:left-0 after:right-0 after:h-2"
                     : "top-[calc(100%+6px)] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2"
@@ -333,7 +362,7 @@ export function TrackerList({items,areas,people,profile,memberships,today}: Trac
                 {/* 2. Opis */}
                 {activePopup.mode === 'preview' ? (
                   <div
-                    className="mt-2.5 max-h-[220px] overflow-y-auto text-xs sm:text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap break-words select-text cursor-text"
+                    className="mt-2.5 max-h-[280px] overflow-y-auto text-xs sm:text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap break-words select-text cursor-text"
                     onClick={() => {
                       setActivePopup(prev => prev ? {...prev, mode: 'edit'} : null);
                     }}
@@ -352,7 +381,7 @@ export function TrackerList({items,areas,people,profile,memberships,today}: Trac
                       onChange={e => setDraftDesc(e.target.value)}
                       disabled={!canEdit || isSaving}
                       placeholder={canEdit ? "Wprowadź opis zadania…" : "Brak opisu"}
-                      className="min-h-[120px] max-h-[260px] text-xs sm:text-sm leading-relaxed whitespace-pre-wrap"
+                      className="min-h-[140px] max-h-[340px] text-xs sm:text-sm leading-relaxed whitespace-pre-wrap w-full"
                       autoFocus
                     />
                     {!canEdit && (
